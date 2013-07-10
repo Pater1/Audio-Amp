@@ -7,3 +7,6 @@ Author: Patrick Conner
 Date:   01MAY13
 
 Audio Amp is a system of audio devices which pair together in a modular system.
+
+The original platform was developed around the popular "Altoids Tin Amplifier" found at many DIY electronics distributors.
+
