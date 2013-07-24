@@ -1,8 +1,8 @@
-/////////////////////////////////////////////////////////////////////////////////////pocket amp/////////////////////
-/*////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////pocket amp/////////
+/*//////////////////////////////////////////////////
 
 started:		5/2/13
-finished:	5/3/13
+finished:		5/3/13
 desighner:	Patrick R. Conner
 copyright:	N/A
 
@@ -10,8 +10,12 @@ copyright:	N/A
 max print size: 180
 */
 
-/////////////////////////////////////////////////////////////////////////////////////perameters/////////////////////
-//////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////////perameters/////////
+////////////////////////////////////////////////////
+
+include<style_modules.scad>
+
 debug = 1;
 
 width = 0;
@@ -23,7 +27,7 @@ amp_length = 70;
 amp_width = 50;
 amp_height = 30;
 
-speaker_box_size = 125;
+speaker_box_size = 130;
 
 wall_thickness = 5;
 
@@ -34,25 +38,24 @@ audio_out_place = [amp_length+wall_thickness*2+1,amp_width/2+wall_thickness,amp_
 
 pot_place = [-1,(amp_width/4*3.5)/2,amp_height/1.5-3];
 
-male_port_place_X = amp_length-wall_thickness*4;
-male_port_place_Z = amp_height/3;
+male_port_place = [amp_length-wall_thickness*4,0,amp_height/3];
+
 female_port_place = [amp_length-wall_thickness*4,0,amp_height/3];
 
-nub_place = [10,width+wall_thickness*2,amp_height/2];
-nub_place_X = 10;
-nub_place_Z = amp_height/2;
+nub_place = [10,0,amp_height/2];
+
 nub_hole_place = [10-.5,0,amp_height/2-1];
 nub_hole_scale = 1.2;
 
 switch_place = [-2,batt_width-4,amp_height/4];
-switch_place_Y = batt_width-4;
-switch_place_Z = amp_height/4;
-switch_place_X = -4;
+
 
 light_place_Y = batt_width-(batt_width/10);
 light_place_Z = amp_height-(amp_height/3);
 
-$fn = 10;
+$fn = 20;
+
+slot = 1;
 
 lid_surface = "checker"; // checker, lattice
 
@@ -62,11 +65,14 @@ checker_max_depth 	= 0.5; 	// thickness of thinnest point in lid due to checkeri
 lattice_width = 3;
 lattice_length = 7;
 
-///////////////////////////////////////////////////////////////////////////////////module_notes/////////////////////
-/*////////////////////////////////////////////////////////
+square_loop_width = 2;
+square_loop_length = 7;
+
+///////////////////////////////////////////////////////////////////////////////////module_notes/////////
+/*//////////////////////////////////////////////////
 rendered{
 	pocket{
-		lid(width, slot)
+		square_lid(width, slot)
 		box_base(width)
 	}
 	mobile{
@@ -94,8 +100,8 @@ functional difference{ //difference from rendered module, required
 	light
 }
 */
-//////////////////////////////////////////////////////////
-////////////////////////////renders/////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////
+////////////////////////////renders/////////////////////////////////////////////////////////////////////
 
 //box
 
@@ -104,20 +110,20 @@ box(amp_length,amp_width,amp_height);//makes box, input width value
 
 //lid
 translate([-85,0,0])
-		lid(amp_width,amp_length,amp_slot,lid_surface); //makes lid, input width value and slot value
+		square_lid(amp_width,amp_length,1,lid_surface = "lattice"); //makes lid, input width value and slot value
 
 
 
-if(debug) debug();
+
 translate([0,-60,0]){
 	box(amp_length,batt_width,amp_height);//makes box, input width value
 	translate([-85,0,0])
-			lid(batt_width,amp_length,batt_slot,lid_surface="lattice");
+			square_lid(batt_width,amp_length,1,lid_surface="square_loop");
 }
 
-*lattice(batt_width,amp_length);
+	*speaker_box();
 
-/////////////////////////////////////////////////////////////////////////////////////modules//////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////modules////////////////////////////////////////////////////////////////
 
 module batt_ports(){
 	translate(switch_place)
@@ -136,16 +142,16 @@ module amp_ports(){
 		pot();
 }
 
-module box(length,width,Height){
+module box(length,width,height){
 	union(){
 		difference(){
-			cube([length+wall_thickness*2,width+wall_thickness*2,Height+wall_thickness]);
+			cube([length+wall_thickness*2,width+wall_thickness*2,height+wall_thickness]);
 			union(){
 				translate([wall_thickness,wall_thickness,wall_thickness])
-					cube([length,width,Height+5]);
+					cube([length,width,height+5]);
 				translate(female_port_place)
 					male_port();
-				translate([male_port_place_X,width+wall_thickness,male_port_place_Z])
+				translate([male_port_place[0],width+wall_thickness,male_port_place[2]])
 					female_port();
 				translate(nub_hole_place)
 					scale(nub_hole_scale)
@@ -155,21 +161,25 @@ module box(length,width,Height){
 				batt_ports();
 				scale([1.01,1.01,1.02])
 					translate([0,wall_thickness,amp_height])
-						lid(batt_width,amp_length,batt_slot, lid_texture = "");
+						square_lid(batt_width,amp_length,batt_slot, lid_texture = "");
 			}
 			if(width == amp_width){
 				amp_ports();
 				scale([1.01,1.01,1.02])
 					translate([0,wall_thickness,amp_height])
-						lid(amp_width,amp_length,batt_slot, lid_texture = "");
+						square_lid(amp_width,amp_length,batt_slot, lid_texture = "");
 			}
 		}
-		translate([nub_place_X,width+wall_thickness*2,nub_place_Z])
+		translate([nub_place[0],width+wall_thickness*2,nub_place[2]])
 			nub();
+		if(width == amp_width){
+			translate([13+wall_thickness,wall_thickness*2,0])
+				perf_board_pins();
+		}
 	}
 }
 
-module lid(width, length, slot, lid_surface){
+module square_lid(width, length, slot, lid_surface){
 	difference(){
 		hull(){
 			cube([amp_length+wall_thickness,width,wall_thickness]);
@@ -180,17 +190,18 @@ module lid(width, length, slot, lid_surface){
 			translate([amp_length+wall_thickness,-wall_thickness/4,0])
 				cube([wall_thickness/4,width+wall_thickness/2,wall_thickness/4]);
 		}
-		hull(){
-			translate([10,slot,(wall_thickness/2)+1]){
-				cylinder(wall_thickness/2,wall_thickness/2,wall_thickness/2);
-				translate([0,-20,0])
-					cylinder(wall_thickness/2,wall_thickness/2,wall_thickness/2);
-		
-			}
+		if(slot){
+			translate([10,width/2,wall_thickness/2+.5])
+				hull(){
+					translate([0,10,0])
+						cylinder(wall_thickness/2,wall_thickness/2,wall_thickness/2);
+					translate([0,-10,0])
+						cylinder(wall_thickness/2,wall_thickness/2,wall_thickness/2);
+				}		
 		}	
-		if(lid_surface == "checker") checker(width,length);
-		if(lid_surface == "lattice") lattice(width,length);
-		if(lid_surface == "square_loop") square_loop(width,length);//not finished
+		if(lid_surface == "checker") checker(width,length,slot);
+		if(lid_surface == "lattice") lattice(width,length,slot);
+		if(lid_surface == "square_loop") square_loop(width,length,slot);//not finished
 	}
 }
 
@@ -198,34 +209,13 @@ module speaker_box(){
 	difference(){
 		union(){
 			difference(){
-				hull(){
-					sphere(wall_thickness*2);
-					translate([speaker_box_size,0,0])
-						sphere(wall_thickness*2);
-					translate([0,speaker_box_size,0])
-						sphere(wall_thickness*2);
-					translate([0,0,speaker_box_size/2])
-						sphere(wall_thickness*2);
-					translate([speaker_box_size,speaker_box_size,0])
-						sphere(wall_thickness*2);
-					translate([0,speaker_box_size,speaker_box_size/2])
-						sphere(wall_thickness*2);
-					translate([speaker_box_size,0,speaker_box_size/2])
-						sphere(wall_thickness*2);
-					translate([speaker_box_size,speaker_box_size,speaker_box_size/2])
-						sphere(wall_thickness*2);
-				}
-			cube([speaker_box_size,speaker_box_size,speaker_box_size+wall_thickness+1]);
-			}//difference
-			cube([amp_length+wall_thickness*2,amp_width+batt_width+wall_thickness*4,amp_height+wall_thickness*2]);
+				cube([speaker_box_size+wall_thickness*2,speaker_box_size+wall_thickness*2,speaker_box_size/2+wall_thickness]);
+				translate([wall_thickness,wall_thickness,wall_thickness])
+					cube([speaker_box_size,speaker_box_size,speaker_box_size]);
+			}
+			cube([amp_length+wall_thickness,amp_width+batt_width+wall_thickness,amp_height+wall_thickness]);
 		}
-		translate([-wall_thickness*2,-wall_thickness*2,-wall_thickness*2])
-			cube([amp_length+wall_thickness*2,amp_width+batt_width+wall_thickness*4,amp_height+wall_thickness*2]);
-		translate([male_place_X-wall_thickness*2,amp_width+batt_width+wall_thickness*2,male_place_Z-wall_thickness*2])
-			male_port();
-		translate([nub_hole_place_X-wall_thickness*2,amp_width+batt_width+wall_thickness*2,nub_hole_place_Z-wall_thickness*2])
-			scale(nub_hole_scale)
-				nub();
+		cube([amp_length,amp_width+batt_width,amp_height]);
 	}
 }
 
@@ -236,8 +226,13 @@ module audio_in_port(){
 }
 
 module pot(){
-	rotate([0,90,0])
-		cylinder(13,3.5,3.5);
+	rotate([0,90,0]){
+		cylinder(13,4,4);
+		cylinder(3.5,6,6);
+	}
+	rotate([90,0,0])
+		translate([0,3.5,-1.5])
+			cube([10,2,3]);
 }
 
 module audio_out_port(){
@@ -279,7 +274,7 @@ module female_port(){
 module nub(){
 	translate([0,-1,0]){
 		hull(){
-		#translate([0,0,wall_thickness*2])
+		translate([0,0,wall_thickness*2])
 			cube([wall_thickness,wall_thickness*1.5,.5]);
 		translate([0,0,-wall_thickness/2])
 			cube([wall_thickness,1,wall_thickness]);
@@ -289,7 +284,7 @@ module nub(){
 
 module switch(){
 	cube([10,5,16]);
-	translate([0,0,(16-24)/2])
+	*translate([0,0,(16-24)/2])
 		cube([5,5,24]);
 	translate([0,2.5,18])
 		rotate([0,90,0])
@@ -302,115 +297,20 @@ module switch(){
 module light(){
 	translate([-5,0,0]){
 		rotate([0,90,0]){
-			scale([2.5,2.5,15]){
-				cylinder([30,5,5]);
-			}
+			cylinder(30,3,3);
 		}
 	}
 }
 
-module checker(width,length){
-	xmax = floor((length-wall_thickness)/(checker_size*2));
-	ymax = floor((width-(wall_thickness/2))/(checker_size*2));
-	//checker_size = floor(amp_length/xmax/2);
-	if(debug) echo(xmax, ymax, checker_size*2);
-	intersection(){
-		translate([0,0,0])
-			difference(){
-				cube([amp_length+wall_thickness,width,20]);
-				translate([10,width/2,0])
-					slot_cut();
-			}
-		translate([(amp_length+wall_thickness)-xmax*checker_size*2,(amp_width-wall_thickness)-checker_size*2*ymax,checker_max_depth])
-			for (x=[0:xmax]){
-				translate([x*checker_size*2-checker_size,0,0])
-					for (y=[0:ymax]){
-						translate([0,y*checker_size*2,0])	
-							rotate(a=[0,0,0])
-								cylinder(r1=0,r2=checker_size,h=wall_thickness-checker_max_depth+.01,center = false,$fn=4);
-				}
-		}
-	}
-}
-
-
-
-module lattice(width,length){
-	offset=sqrt(lattice_length/2)+lattice_width/2;
-	point_line_up=sqrt(lattice_length/2)+sqrt(lattice_width/2)+lattice_width+1;
-	pattern_width=(offset+point_line_up)*1.25;
-	xmax=floor(length/pattern_width);
-	ymax=floor(width/pattern_width);
-
-	translate([0,0,3])
-		intersection(){
-			for(x=[0:xmax]){
-				for(y=[0:ymax]){
-					translate([offset+pattern_width*x,offset+pattern_width*y,0])
-						rotate([0,0,45])
-							cube([lattice_width,lattice_length,wall_thickness],center=true);
-					translate([offset+pattern_width*x,offset+point_line_up+pattern_width*y,0])
-						rotate([0,0,45+90])
-							cube([lattice_width,lattice_length,wall_thickness],center=true);
-					translate([offset+point_line_up+pattern_width*x,offset+pattern_width*y,0])
-						rotate([0,0,45+90])
-							cube([lattice_width,lattice_length,wall_thickness],center=true);
-					translate([offset+point_line_up+pattern_width*x,offset+point_line_up+pattern_width*y,0])
-						rotate([0,0,45])
-							cube([lattice_width,lattice_length,wall_thickness],center=true);
-				}
-			}
-			difference(){
-				translate([0,0,0])
-					cube([length+wall_thickness-1,width,10]);
-				translate([11,width/2,-10])
-					slot_cut();
-			}
-		}
-
-
-	echo("xmax:",xmax, "ymax:",ymax, "offset:", offset, "point_line_up:", point_line_up);
-			
-}
-
-module square_loop(width,length,slot){
-	offset=sqrt(lattice_length/2)+lattice_width/2;
-	point_line_up=sqrt(lattice_length/2)+sqrt(lattice_width/2)+lattice_width;
-	pattern_width=(offset+point_line_up);
-	xmax=floor(length/pattern_width);
-	ymax=floor(width/pattern_width);
-
-	for(x=[0:xmax]){
-		for(y=[0:ymax]){
-			translate([offset+pattern_width*x,offset+pattern_width*y,0])
-				rotate([0,0,45])
-					cube([lattice_width,lattice_length,wall_thickness],center=true);
-			translate([offset+pattern_width*x,offset+point_line_up+pattern_width*y,0])
-				rotate([0,0,45+90])
-					cube([lattice_width,lattice_length,wall_thickness],center=true);
-			translate([offset+point_line_up+pattern_width*x,offset+pattern_width*y,0])
-				rotate([0,0,45+90])
-					cube([lattice_width,lattice_length,wall_thickness],center=true);
-			translate([offset+point_line_up+pattern_width*x,offset+point_line_up+pattern_width*y,0])
-				rotate([0,0,45])
-					cube([lattice_width,lattice_length,wall_thickness],center=true);
-		}
-	}
-
-
-	echo("xmax:",xmax, "ymax:",ymax, "offset:", offset, "point_line_up:", point_line_up);
-			
-}
-
-module slot_cut(){
-	hull(){
-		translate([0,10,0])
-			cylinder(20,wall_thickness,wall_thickness);
-		translate([0,-10,0])
-			cylinder(20,wall_thickness,wall_thickness);					
-		translate([-12,-15,0])
-			cube([10,30,20]);
-	}
+module perf_board_pins(){
+	translate([2,2,0])
+		cylinder(wall_thickness*2,2,2);
+	translate([2,2+30+4,0])
+		cylinder(wall_thickness*2,2,2);
+	translate([2+30+4,2,0])
+		cylinder(wall_thickness*2,2,2);
+	translate([2+30+4,2+30+4,0])
+		cylinder(wall_thickness*2,2,2);
 }
 
 module debug(){
